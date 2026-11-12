@@ -680,13 +680,19 @@ async function mergeWithSpiro(tpbeBytes, spiroBytes, PDFLib){
       } else { blob = base.output('blob'); }
     } catch(e){ toast('No se pudo crear el PDF: ' + e.message); return; }
     if (!dlApi) dlApi = await getDl();
-    if (!dlApi) { toast('Esta vista no permite descargar. Abra la app desde su enlace en claude.ai.'); return; }
+    if (!dlApi) { try { anchorDownload(blob, name); toast('PDF descargado: ' + name); } catch(e){ toast('El navegador bloqueó la descarga.'); } return; }
     try { await dlApi.save({filename: name, data: blob}); toast('PDF listo: ' + name); }
     catch(e){ toast('La descarga se canceló o fue rechazada.'); }
   }
   $('pdf').addEventListener('click', makePdf);
   $('pdfTop').addEventListener('click', makePdf);
-  getDl().then(function(d){ dlApi = d; if (d) { $('pdf').hidden = false; $('pdfTop').hidden = false; } else { $('pdfNote').textContent = 'La descarga de PDF no está disponible en esta vista.'; } });
+  /* Fuera de claude.ai (p. ej. GitHub Pages) no existe la capacidad de descarga: se usa la descarga normal del navegador. */
+  function anchorDownload(blob, name){
+    var u = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+  }
+  getDl().then(function(d){ dlApi = d; $('pdf').hidden = false; $('pdfTop').hidden = false; });
 
   function render(fromUser){
     var S = readState();
